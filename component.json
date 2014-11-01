@@ -1,0 +1,10 @@
+{
+  "name": "lang-js-ordinal",
+  "version": "1.0.0",
+  "description": "ordinal rules for various languages",
+  "repo": "lang-js/ordinal",
+  "main": "index.js",
+  "author": "Cameron Bytheway <bytheway.cameron@gmail.com>",
+  "scripts": ["index.js"],
+  "license": "MIT"
+}

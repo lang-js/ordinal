@@ -1,0 +1,77 @@
+#!/usr/bin/env node
+
+var cldr = require('cldr');
+var extractOrdinalRuleFunction = require('../lib/extract');
+var CldrPluralRuleSet = require('cldr/lib/CldrPluralRuleSet');
+var path = require('path');
+var xpath = require('xpath');
+
+/**
+ * Gather all of the plural functions for the supported locales
+ */
+
+var locales = cldr.localeIds.reduce(function(acc, locale) {
+  var fn = extractOrdinalRuleFunction(cldr, locale).toString();
+  var group = acc[fn] = acc[fn] || [];
+  group.push(locale);
+  return acc;
+}, {});
+
+/**
+ * Minimize the number of duplicate primary locales
+ */
+
+var reduced = Object.keys(locales).reduce(function(acc, fn) {
+  acc[fn] = locales[fn].reduce(function(list, locale) {
+    var short = locale.split('_')[0];
+
+    if (short === locale) {
+      list.push(locale);
+      return list;
+    }
+
+    if (!~list.indexOf(short)) list.push(locale);
+
+    return list;
+  }, []);
+  return acc;
+}, {});
+
+/**
+ * Format the output
+ */
+
+var out = Object.keys(reduced).reduce(function(acc, fn) {
+  var list = reduced[fn];
+  var main = list[0];
+  return acc + '\n\n(' + list.map(function(key) {
+    return 'e.' + key + ' =';
+  }).join('\n ') + ' ' + fn.replace('anonymous', main) + ').count = ' + countLocale(list[0]) + ';';
+}, 'var e = exports;');
+
+/**
+ * Count how many plural formats there are for a locale
+ */
+
+function countLocale(locale) {
+  var document = cldr.getDocument(path.resolve(cldr.cldrPath, 'common', 'supplemental', 'plurals.xml'));
+  var statementAsts = [];
+
+  var matchLocalesXPathExpr =
+    "@locales = '" + locale + "' or " +
+    "starts-with(@locales, '" + locale + "') or " +
+    "contains(@locales, ' " + locale + " ') or " +
+    "substring(@locales, string-length(@locales) - string-length(' " + locale + "') + 1) = ' " + locale + "'";
+
+  var pluralRulesNodes = xpath.select("/supplementalData/plurals/pluralRules[" + matchLocalesXPathExpr + "]", document);
+  var cldrPluralRuleSet = new CldrPluralRuleSet();
+
+  if (pluralRulesNodes.length > 0) {
+    xpath.select("pluralRule", pluralRulesNodes[0]).forEach(function (pluralRuleNode) {
+      cldrPluralRuleSet.addRule(pluralRuleNode.textContent, pluralRuleNode.getAttribute('count'));
+    });
+  }
+  return '' + (Object.keys(cldrPluralRuleSet.cldrPluralRuleByCount).length + 1);
+}
+
+process.stdout.write(out);
