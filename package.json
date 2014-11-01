@@ -1,6 +1,6 @@
 {
   "name": "lang-js-ordinal",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "ordinal rules for various languages",
   "main": "index.js",
   "scripts": {
