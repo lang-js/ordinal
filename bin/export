@@ -6,12 +6,17 @@ var CldrPluralRuleSet = require('cldr/lib/CldrPluralRuleSet');
 var path = require('path');
 var xpath = require('xpath');
 
+var missingFn = (function anonymous(n) {
+
+}).toString();
+
 /**
  * Gather all of the plural functions for the supported locales
  */
 
 var locales = cldr.localeIds.reduce(function(acc, locale) {
   var fn = extractOrdinalRuleFunction(cldr, locale).toString();
+  if (fn === missingFn) return acc;
   var group = acc[fn] = acc[fn] || [];
   group.push(locale);
   return acc;
