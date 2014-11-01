@@ -44,17 +44,22 @@ var reduced = Object.keys(locales).reduce(function(acc, fn) {
 var out = Object.keys(reduced).reduce(function(acc, fn) {
   var list = reduced[fn];
   var main = list[0];
-  return acc + '\n\n(' + list.map(function(key) {
+  return acc + '\n\naugment(' + list.map(function(key) {
     return 'e.' + key + ' =';
-  }).join('\n ') + ' ' + fn.replace('anonymous', main) + ').count = ' + countLocale(list[0]) + ';';
-}, 'var e = exports;');
+  }).join('\n ') + ' ' + fn.replace('anonymous', main) + ', ' + listFormats(list[0]) + ');';
+}, 'var e = exports;\n\n' + augment.toString());
+
+function augment(fn, list) {
+  fn.count = list.length;
+  fn.formats = list;
+}
 
 /**
  * Count how many plural formats there are for a locale
  */
 
-function countLocale(locale) {
-  var document = cldr.getDocument(path.resolve(cldr.cldrPath, 'common', 'supplemental', 'plurals.xml'));
+function listFormats(locale) {
+  var document = cldr.getDocument(path.resolve(cldr.cldrPath, 'common', 'supplemental', 'ordinals.xml'));
   var statementAsts = [];
 
   var matchLocalesXPathExpr =
@@ -71,7 +76,9 @@ function countLocale(locale) {
       cldrPluralRuleSet.addRule(pluralRuleNode.textContent, pluralRuleNode.getAttribute('count'));
     });
   }
-  return '' + (Object.keys(cldrPluralRuleSet.cldrPluralRuleByCount).length + 1);
+  var keys = Object.keys(cldrPluralRuleSet.cldrPluralRuleByCount);
+  keys.push('other');
+  return JSON.stringify(keys);
 }
 
 process.stdout.write(out);
